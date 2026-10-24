@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Gather"
+description = "A responsive workshop-discovery app where visitors can browse upcoming events, view workshop details, and submit an RSVP with a clear confirmation."
+version = "1.0.0"
+id = "artifacts/gather"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20276
+
+[services.development]
+run = "pnpm --filter @workspace/gather run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gather", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gather/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20276"
+BASE_PATH = "/"

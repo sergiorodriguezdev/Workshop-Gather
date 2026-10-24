@@ -25,6 +25,7 @@ export default function Home() {
             <a href="#workshops" data-testid="link-upcoming-workshops">Find a workshop</a>
             <a href="#about" data-testid="link-about-gather">Our little idea</a>
           </nav>
+          <Link href="/my-rsvps" className="nav-session focus-ring" data-testid="link-header-my-rsvps">My RSVPs</Link>
           <a href="#workshops" className="nav-cta focus-ring" data-testid="button-explore-workshops">Explore workshops <ArrowRight size={15} /></a>
         </div>
       </header>

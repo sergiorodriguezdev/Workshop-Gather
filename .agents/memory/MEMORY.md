@@ -1,0 +1,1 @@
+- [Gather RSVP scope](gather-rsvp-scope.md) — keep RSVPs session-local; no login, database, payments, or external integrations.

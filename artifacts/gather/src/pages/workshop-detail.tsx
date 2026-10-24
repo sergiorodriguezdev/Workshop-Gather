@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'wouter';
 import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock3, MapPin, Sparkles, Users } from 'lucide-react';
 import { getWorkshop, workshops } from '../data/workshops';
+import { addSessionRsvp } from '../lib/session-rsvps';
 import NotFound from './not-found';
 
 export default function WorkshopDetail() {
@@ -20,7 +21,10 @@ export default function WorkshopDetail() {
     if (!email.trim()) nextErrors.email = 'Please add your email.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) nextErrors.email = 'That email doesn’t look quite right.';
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0) setIsConfirmed(true);
+    if (Object.keys(nextErrors).length === 0) {
+      addSessionRsvp(workshop.id);
+      setIsConfirmed(true);
+    }
   };
 
   return (
@@ -30,6 +34,7 @@ export default function WorkshopDetail() {
         <div className="header-inner">
           <Link href="/" className="brand focus-ring" data-testid="link-home-logo"><span className="brand-mark">g</span><span>gather<span className="brand-period">.</span></span></Link>
           <nav className="header-nav" aria-label="Main navigation"><Link href="/" data-testid="link-detail-browse">Find a workshop</Link><a href="/#about" data-testid="link-detail-about">Our little idea</a></nav>
+          <Link href="/my-rsvps" className="nav-session focus-ring" data-testid="link-header-my-rsvps">My RSVPs</Link>
           <Link href="/" className="nav-cta focus-ring" data-testid="button-back-to-workshops">All workshops <ArrowRight size={15} /></Link>
         </div>
       </header>
@@ -85,7 +90,8 @@ export default function WorkshopDetail() {
               <div className="rsvp-success" role="status" data-testid="status-rsvp-confirmed">
                 <span className="success-mark"><Check size={20} /></span>
                 <h3 className="serif">You’re on the list, {name.trim().split(' ')[0]}.</h3>
-                <p>We’ve saved a local RSVP preview for this visit. Nothing has been sent or stored remotely.</p>
+                <p>This workshop is saved under My RSVPs for this browser session. Your contact details aren’t stored or sent.</p>
+                <Link href="/my-rsvps" className="text-link" data-testid="link-view-my-rsvps">View My RSVPs <ArrowRight size={14} /></Link>
                 <button type="button" className="text-link" onClick={() => { setIsConfirmed(false); setErrors({}); }} data-testid="button-edit-rsvp">Edit your details <ArrowRight size={14} /></button>
               </div>
             ) : (
@@ -97,7 +103,7 @@ export default function WorkshopDetail() {
                 <input id="attendee-email" type="email" value={email} onChange={(event) => { setEmail(event.target.value); setErrors((current) => ({ ...current, email: undefined })); }} placeholder="you@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} data-testid="input-attendee-email" />
                 {errors.email && <p className="field-error" id="email-error" data-testid="error-attendee-email">{errors.email}</p>}
                 <button type="submit" className="rsvp-submit focus-ring" data-testid="button-submit-rsvp">Save my seat <ArrowRight size={16} /></button>
-                <p className="privacy-note">A local preview only. Your details won’t be sent or saved.</p>
+                <p className="privacy-note">Saved in this browser session only. Your contact details won’t be stored or sent.</p>
               </form>
             )}
             <div className="rsvp-bottom">GOOD COMPANY, GUARANTEED <Sparkles size={14} aria-hidden="true" /></div>

@@ -162,8 +162,15 @@
 .header-nav { display: flex; align-items: center; gap: 36px; margin-left: 105px; }
 .header-nav a { color: hsl(var(--foreground)); font-size: 12px; text-decoration: none; transition: color .2s; }
 .header-nav a:hover { color: hsl(var(--accent)); }
+.nav-session { color: hsl(var(--foreground)); font-size: 11px; font-weight: 600; text-decoration: none; white-space: nowrap; transition: color .2s; }
+.nav-session:hover { color: hsl(var(--accent)); }
 .nav-cta { display: inline-flex; align-items: center; gap: 13px; font-size: 11px; font-weight: 600; text-decoration: none; color: hsl(var(--primary-foreground)); background: hsl(var(--primary)); padding: 13px 16px; border-radius: 3px; transition: transform .2s, background .2s; }
 .nav-cta:hover { transform: translateY(-2px); background: hsl(161 34% 22%); }
+.my-rsvps-heading h1 { font-size: clamp(40px, 5vw, 58px); font-weight: 500; letter-spacing: -.045em; line-height: 1.08; margin: 18px 0 0; }
+.my-rsvps-heading h1 em { color: hsl(var(--accent)); font-weight: 500; }
+.my-rsvps-section .results-note { margin-top: 38px; }
+.my-rsvps-section .empty-results { margin-top: 36px; }
+.my-rsvps-section .text-link { margin-top: 16px; }
 .hero { width: min(1200px, calc(100% - 64px)); margin: 0 auto; min-height: 564px; display: grid; grid-template-columns: 1.06fr .94fr; align-items: center; position: relative; padding: 58px 0 72px; }
 .hero-copy { position: relative; z-index: 1; padding: 0 0 12px 28px; }
 .eyebrow { display: flex; align-items: center; gap: 10px; font-size: 9px; font-weight: 700; color: hsl(var(--muted-foreground)); letter-spacing: .16em; }
@@ -335,6 +342,7 @@
   .site-header { height: 68px; }
   .header-inner { width: calc(100% - 36px); }
   .header-nav { display: none; }
+  .nav-session { font-size: 9px; }
   .nav-cta { padding: 11px 12px; font-size: 9px; gap: 8px; }
   .brand { font-size: 18px; }
   .hero { width: calc(100% - 36px); display: flex; flex-direction: column; align-items: stretch; padding: 52px 0 65px; gap: 36px; }

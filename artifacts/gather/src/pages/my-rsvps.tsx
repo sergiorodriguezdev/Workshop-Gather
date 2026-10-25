@@ -1,27 +1,19 @@
 import { ArrowRight, CalendarDays, Sparkles } from 'lucide-react';
+import { useUser } from '@clerk/react';
 import { Link } from 'wouter';
 import { workshops } from '../data/workshops';
-import { getSessionRsvpIds } from '../lib/session-rsvps';
+import { getCustomerRsvpIds } from '../lib/customer-rsvps';
+import GatherHeader from '../components/gather-header';
 
 export default function MyRsvps() {
-  const savedIds = new Set(getSessionRsvpIds());
+  const { user, isLoaded } = useUser();
+  const savedIds = new Set(user ? getCustomerRsvpIds(user.id) : []);
   const savedWorkshops = workshops.filter((workshop) => savedIds.has(workshop.id));
 
   return (
     <div className="gather-app">
       <div className="grain" aria-hidden="true" />
-      <header className="site-header">
-        <div className="header-inner">
-          <Link href="/" className="brand focus-ring" data-testid="link-home-logo" aria-label="Gather home">
-            <span className="brand-mark">g</span><span>gather<span className="brand-period">.</span></span>
-          </Link>
-          <nav className="header-nav" aria-label="Main navigation">
-            <Link href="/" data-testid="link-rsvps-browse">Find a workshop</Link>
-          </nav>
-          <Link href="/my-rsvps" className="nav-session focus-ring" data-testid="link-header-my-rsvps" aria-current="page">My RSVPs</Link>
-          <Link href="/" className="nav-cta focus-ring" data-testid="button-explore-workshops">Explore workshops <ArrowRight size={15} /></Link>
-        </div>
-      </header>
+      <GatherHeader />
 
       <main>
         <section className="browse-section my-rsvps-section">
@@ -30,16 +22,32 @@ export default function MyRsvps() {
               <div className="eyebrow"><span className="eyebrow-line" /> YOUR PLANS</div>
               <h1 className="serif">My <em>RSVPs.</em></h1>
             </div>
-            <p className="section-intro">The workshops you’ve saved for this browser session. Your contact details aren’t stored or sent.</p>
+            <p className="section-intro">
+              {user
+                ? `Your workshop plans, ${user.firstName || user.fullName || user.primaryEmailAddress?.emailAddress || 'all in one place'}.`
+                : 'Sign in to see the workshops you’ve saved to your Gather account.'}
+            </p>
           </div>
 
-          {savedWorkshops.length > 0 ? (
+          {!isLoaded ? (
+            <div className="empty-results" role="status" data-testid="status-rsvps-loading">
+              <p>Loading your plans…</p>
+            </div>
+          ) : !user ? (
+            <div className="empty-results" data-testid="gate-my-rsvps-sign-in">
+              <Sparkles className="empty-spark" size={24} aria-hidden="true" />
+              <h2 className="serif">Your plans start here.</h2>
+              <p>Sign in to keep your workshop RSVPs together and see them here.</p>
+              <Link href="/sign-in?returnTo=%2Fmy-rsvps" className="text-link" data-testid="link-my-rsvps-sign-in">Sign in <ArrowRight size={15} /></Link>
+              <Link href="/sign-up?returnTo=%2Fmy-rsvps" className="text-link" data-testid="link-my-rsvps-sign-up">Create an account <ArrowRight size={15} /></Link>
+            </div>
+          ) : savedWorkshops.length > 0 ? (
             <>
               <div className="results-note" aria-live="polite" data-testid="text-rsvp-count">
                 <span>{savedWorkshops.length} saved {savedWorkshops.length === 1 ? 'gathering' : 'gatherings'}</span>
                 <span className="results-city">BROOKLYN, NEW YORK <span className="city-dot" /></span>
               </div>
-              <div className="workshop-grid" data-testid="list-session-rsvps">
+              <div className="workshop-grid" data-testid="list-customer-rsvps">
                 {savedWorkshops.map((workshop, index) => (
                   <Link href={`/workshops/${workshop.id}`} className="workshop-card focus-ring" key={workshop.id} data-testid={`card-rsvp-${workshop.id}`}>
                     <div className="card-image-wrap">
@@ -61,10 +69,10 @@ export default function MyRsvps() {
               </div>
             </>
           ) : (
-            <div className="empty-results" data-testid="empty-session-rsvps">
+            <div className="empty-results" data-testid="empty-customer-rsvps">
               <Sparkles className="empty-spark" size={24} aria-hidden="true" />
               <h2 className="serif">Nothing saved just yet.</h2>
-              <p>When you RSVP to a workshop, it’ll be waiting here for this browser session.</p>
+              <p>When you RSVP to a workshop, it’ll be waiting here in your account on this device.</p>
               <Link href="/" className="text-link" data-testid="link-browse-from-empty">Find a workshop <ArrowRight size={15} /></Link>
             </div>
           )}

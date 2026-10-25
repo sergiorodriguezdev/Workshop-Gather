@@ -1,43 +1,40 @@
 import { useState, type FormEvent } from 'react';
+import { useUser } from '@clerk/react';
 import { Link, useParams } from 'wouter';
 import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock3, MapPin, Sparkles, Users } from 'lucide-react';
 import { getWorkshop, workshops } from '../data/workshops';
-import { addSessionRsvp } from '../lib/session-rsvps';
+import { addCustomerRsvp, getCustomerRsvpIds } from '../lib/customer-rsvps';
+import GatherHeader from '../components/gather-header';
 import NotFound from './not-found';
 
 export default function WorkshopDetail() {
   const params = useParams<{ id: string }>();
   const workshop = getWorkshop(params.id ?? '');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const { user, isLoaded } = useUser();
+  const [localConfirmation, setLocalConfirmation] = useState<{ userId: string; workshopId: string } | null>(null);
+
   if (!workshop) return <NotFound />;
+
+  const isConfirmed = Boolean(
+    user && (
+      getCustomerRsvpIds(user.id).includes(workshop.id) ||
+      (localConfirmation?.userId === user.id && localConfirmation.workshopId === workshop.id)
+    ),
+  );
 
   const submitRsvp = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const nextErrors: { name?: string; email?: string } = {};
-    if (!name.trim()) nextErrors.name = 'Please add your name.';
-    if (!email.trim()) nextErrors.email = 'Please add your email.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) nextErrors.email = 'That email doesn’t look quite right.';
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0) {
-      addSessionRsvp(workshop.id);
-      setIsConfirmed(true);
-    }
+    if (!user) return;
+    addCustomerRsvp(user.id, workshop.id);
+    setLocalConfirmation({ userId: user.id, workshopId: workshop.id });
   };
+
+  const returnToWorkshop = `/workshops/${workshop.id}`;
 
   return (
     <div className="gather-app">
       <div className="grain" aria-hidden="true" />
-      <header className="site-header">
-        <div className="header-inner">
-          <Link href="/" className="brand focus-ring" data-testid="link-home-logo"><span className="brand-mark">g</span><span>gather<span className="brand-period">.</span></span></Link>
-          <nav className="header-nav" aria-label="Main navigation"><Link href="/" data-testid="link-detail-browse">Find a workshop</Link><a href="/#about" data-testid="link-detail-about">Our little idea</a></nav>
-          <Link href="/my-rsvps" className="nav-session focus-ring" data-testid="link-header-my-rsvps">My RSVPs</Link>
-          <Link href="/" className="nav-cta focus-ring" data-testid="button-back-to-workshops">All workshops <ArrowRight size={15} /></Link>
-        </div>
-      </header>
+      <GatherHeader />
 
       <main className="detail-page">
         <Link href="/" className="back-link focus-ring" data-testid="link-back-to-list"><ArrowLeft size={16} /> All workshops</Link>
@@ -86,24 +83,31 @@ export default function WorkshopDetail() {
               <div data-testid={`text-event-venue-${workshop.id}`}><MapPin size={17} /><span><strong>{workshop.venue}</strong><small>{workshop.address}</small></span></div>
               <div data-testid={`text-event-availability-${workshop.id}`}><Users size={17} /><span><strong>Small group</strong><small>{workshop.available} of {workshop.capacity} places still open</small></span></div>
             </div>
-            {isConfirmed ? (
+            {!isLoaded ? (
+              <div className="rsvp-auth-gate" role="status" data-testid="status-rsvp-auth-loading">
+                Checking your account…
+              </div>
+            ) : !user ? (
+              <div className="rsvp-auth-gate" data-testid="gate-rsvp-sign-in">
+                <p>Sign in to save your seat and keep your plans together under My RSVPs.</p>
+                <Link href={`/sign-in?returnTo=${encodeURIComponent(returnToWorkshop)}`} className="rsvp-submit focus-ring" data-testid="link-rsvp-sign-in">
+                  Sign in to RSVP <ArrowRight size={16} />
+                </Link>
+                <Link href={`/sign-up?returnTo=${encodeURIComponent(returnToWorkshop)}`} className="text-link" data-testid="link-rsvp-sign-up">
+                  Create an account <ArrowRight size={14} />
+                </Link>
+              </div>
+            ) : isConfirmed ? (
               <div className="rsvp-success" role="status" data-testid="status-rsvp-confirmed">
                 <span className="success-mark"><Check size={20} /></span>
-                <h3 className="serif">You’re on the list, {name.trim().split(' ')[0]}.</h3>
-                <p>This workshop is saved under My RSVPs for this browser session. Your contact details aren’t stored or sent.</p>
+                <h3 className="serif">You’re on the list, {user.firstName || user.fullName?.split(' ')[0] || user.primaryEmailAddress?.emailAddress || 'friend'}.</h3>
+                <p>This workshop is saved to your Gather account on this device. No contact details are stored here.</p>
                 <Link href="/my-rsvps" className="text-link" data-testid="link-view-my-rsvps">View My RSVPs <ArrowRight size={14} /></Link>
-                <button type="button" className="text-link" onClick={() => { setIsConfirmed(false); setErrors({}); }} data-testid="button-edit-rsvp">Edit your details <ArrowRight size={14} /></button>
               </div>
             ) : (
               <form className="rsvp-form" onSubmit={submitRsvp} noValidate>
-                <label htmlFor="attendee-name">Your name</label>
-                <input id="attendee-name" value={name} onChange={(event) => { setName(event.target.value); setErrors((current) => ({ ...current, name: undefined })); }} placeholder="How shall we call you?" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'name-error' : undefined} data-testid="input-attendee-name" />
-                {errors.name && <p className="field-error" id="name-error" data-testid="error-attendee-name">{errors.name}</p>}
-                <label htmlFor="attendee-email">Email address</label>
-                <input id="attendee-email" type="email" value={email} onChange={(event) => { setEmail(event.target.value); setErrors((current) => ({ ...current, email: undefined })); }} placeholder="you@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} data-testid="input-attendee-email" />
-                {errors.email && <p className="field-error" id="email-error" data-testid="error-attendee-email">{errors.email}</p>}
                 <button type="submit" className="rsvp-submit focus-ring" data-testid="button-submit-rsvp">Save my seat <ArrowRight size={16} /></button>
-                <p className="privacy-note">Saved in this browser session only. Your contact details won’t be stored or sent.</p>
+                <p className="privacy-note">Saved to your account on this device. No contact details are stored here.</p>
               </form>
             )}
             <div className="rsvp-bottom">GOOD COMPANY, GUARANTEED <Sparkles size={14} aria-hidden="true" /></div>

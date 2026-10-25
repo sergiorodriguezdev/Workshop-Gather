@@ -1,0 +1,62 @@
+import { shadcn } from '@clerk/themes';
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+export const clerkAppearance = {
+  theme: shadcn,
+  cssLayerName: 'clerk',
+  options: {
+    logoPlacement: 'inside' as const,
+    logoLinkUrl: basePath || '/',
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+  },
+  variables: {
+    colorPrimary: '#315947',
+    colorForeground: '#273d34',
+    colorMutedForeground: '#64736b',
+    colorDanger: '#b84c42',
+    colorBackground: '#faf8f1',
+    colorInput: '#fffdf9',
+    colorInputForeground: '#273d34',
+    colorNeutral: '#d8d0c2',
+    fontFamily: 'DM Sans, sans-serif',
+    borderRadius: '3px',
+  },
+  elements: {
+    rootBox: { width: '100%', display: 'flex', justifyContent: 'center' },
+    cardBox: {
+      backgroundColor: '#faf8f1',
+      borderRadius: '3px',
+      width: 'min(440px, 100%)',
+      overflow: 'hidden',
+      boxShadow: '0 14px 38px rgba(49, 59, 46, 0.09)',
+    },
+    card: { backgroundColor: 'transparent', border: '0', boxShadow: 'none' },
+    footer: { backgroundColor: 'transparent', border: '0', boxShadow: 'none' },
+    headerTitle: { color: '#273d34', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 500 },
+    headerSubtitle: { color: '#64736b' },
+    socialButtonsBlockButtonText: { color: '#273d34', fontWeight: 600 },
+    formFieldLabel: { color: '#273d34', fontWeight: 600 },
+    footerActionLink: { color: '#315947', fontWeight: 600 },
+    footerActionText: { color: '#64736b' },
+    dividerText: { color: '#64736b' },
+    identityPreviewEditButton: { color: '#315947' },
+    formFieldSuccessText: { color: '#315947' },
+    alertText: { color: '#273d34' },
+    logoBox: { width: '34px', height: '34px' },
+    logoImage: { width: '34px', height: '34px' },
+    socialButtonsBlockButton: {
+      borderColor: '#d8d0c2',
+      backgroundColor: '#fffdf9',
+      color: '#273d34',
+    },
+    formButtonPrimary: { backgroundColor: '#315947', color: '#fffdf9', fontWeight: 600 },
+    formFieldInput: { backgroundColor: '#fffdf9', color: '#273d34', borderColor: '#d8d0c2' },
+    footerAction: { backgroundColor: 'transparent' },
+    dividerLine: { backgroundColor: '#d8d0c2' },
+    alert: { backgroundColor: '#fffdf9', borderColor: '#d8d0c2' },
+    otpCodeFieldInput: { backgroundColor: '#fffdf9', color: '#273d34', borderColor: '#d8d0c2' },
+    formFieldRow: { color: '#273d34' },
+    main: { color: '#273d34' },
+  },
+};

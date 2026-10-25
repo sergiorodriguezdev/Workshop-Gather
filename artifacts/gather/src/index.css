@@ -1,5 +1,7 @@
+@layer theme, base, clerk, components, utilities;
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
 @import 'tailwindcss';
+@import '@clerk/themes/shadcn.css';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
 
@@ -164,6 +166,10 @@
 .header-nav a:hover { color: hsl(var(--accent)); }
 .nav-session { color: hsl(var(--foreground)); font-size: 11px; font-weight: 600; text-decoration: none; white-space: nowrap; transition: color .2s; }
 .nav-session:hover { color: hsl(var(--accent)); }
+.header-account { display: flex; align-items: center; gap: 17px; }
+.nav-user-name { color: hsl(var(--muted-foreground)); font-size: 10px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-session-button { appearance: none; border: 0; padding: 0; background: transparent; color: hsl(var(--foreground)); cursor: pointer; font-size: 11px; font-weight: 600; white-space: nowrap; transition: color .2s; }
+.nav-session-button:hover { color: hsl(var(--accent)); }
 .nav-cta { display: inline-flex; align-items: center; gap: 13px; font-size: 11px; font-weight: 600; text-decoration: none; color: hsl(var(--primary-foreground)); background: hsl(var(--primary)); padding: 13px 16px; border-radius: 3px; transition: transform .2s, background .2s; }
 .nav-cta:hover { transform: translateY(-2px); background: hsl(161 34% 22%); }
 .my-rsvps-heading h1 { font-size: clamp(40px, 5vw, 58px); font-weight: 500; letter-spacing: -.045em; line-height: 1.08; margin: 18px 0 0; }
@@ -313,6 +319,9 @@
 .rsvp-submit { border: 0; cursor: pointer; color: hsl(var(--primary-foreground)); background: hsl(var(--primary)); width: 100%; height: 43px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 10px; font-weight: 600; transition: background .2s, transform .2s; }
 .rsvp-submit:hover { background: hsl(161 34% 22%); transform: translateY(-1px); }
 .privacy-note { font-size: 8px; color: hsl(var(--muted-foreground)); text-align: center; margin: 10px 0 1px; line-height: 1.5; }
+.rsvp-auth-gate { border-top: 1px solid hsl(var(--border)); padding-top: 15px; display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+.rsvp-auth-gate p { color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.65; margin: 0 0 2px; }
+.rsvp-auth-gate .text-link { margin: 0 auto; }
 .rsvp-bottom { border-top: 1px solid hsl(var(--border)); padding-top: 13px; margin-top: 17px; display: flex; justify-content: space-between; align-items: center; color: hsl(var(--muted-foreground)); font-size: 7px; letter-spacing: .13em; }
 .rsvp-bottom span { color: hsl(var(--accent)); font-size: 15px; }
 .rsvp-success { border-top: 1px solid hsl(var(--border)); padding: 20px 0 8px; }
@@ -328,6 +337,14 @@
 .more-link strong { font-size: 19px; font-weight: 500; }
 .more-link svg { color: hsl(var(--accent)); transition: transform .2s; }
 .more-link:hover svg { transform: translateX(4px); }
+.auth-page-main { width: min(1080px, calc(100% - 64px)); min-height: calc(100dvh - 164px); margin: 0 auto; padding: 64px 0 82px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 440px); gap: clamp(40px, 8vw, 100px); align-items: center; }
+.auth-copy { padding: 0 0 24px 12px; }
+.auth-copy h1 { max-width: 510px; font-size: clamp(46px, 6vw, 70px); line-height: 1.02; letter-spacing: -.05em; font-weight: 500; margin: 23px 0 19px; }
+.auth-copy h1 em { color: hsl(var(--accent)); font-weight: 500; }
+.auth-copy > p { max-width: 360px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.8; }
+.auth-back-link { display: inline-flex; align-items: center; gap: 9px; margin-top: 24px; color: hsl(var(--primary)); font-size: 11px; font-weight: 600; text-decoration: none; }
+.auth-back-link:hover { color: hsl(var(--accent)); }
+.auth-widget { width: 100%; }
 
 @media (max-width: 900px) {
   .workshop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
@@ -340,10 +357,14 @@
 }
 @media (max-width: 680px) {
   .site-header { height: 68px; }
-  .header-inner { width: calc(100% - 36px); }
+  .header-inner { width: calc(100% - 36px); gap: 9px; }
   .header-nav { display: none; }
   .nav-session { font-size: 9px; }
+  .header-account { gap: 10px; }
+  .nav-user-name { font-size: 9px; max-width: 74px; }
+  .nav-session-button { font-size: 9px; }
   .nav-cta { padding: 11px 12px; font-size: 9px; gap: 8px; }
+  .header-inner > .nav-cta { display: none; }
   .brand { font-size: 18px; }
   .hero { width: calc(100% - 36px); display: flex; flex-direction: column; align-items: stretch; padding: 52px 0 65px; gap: 36px; }
   .hero-copy { padding-left: 3px; }
@@ -406,4 +427,9 @@
   .more-workshops h2 { font-size: 31px; }
   .more-link { grid-template-columns: 70px 1fr auto; gap: 8px; }
   .more-link strong { font-size: 17px; }
+  .auth-page-main { width: calc(100% - 36px); min-height: auto; padding: 48px 0 64px; display: flex; flex-direction: column; align-items: stretch; gap: 32px; }
+  .auth-copy { padding: 0 2px; }
+  .auth-copy h1 { font-size: clamp(43px, 12vw, 58px); margin: 17px 0 14px; }
+  .auth-copy > p { font-size: 11px; }
+  .auth-widget { max-width: 440px; margin: 0 auto; }
 }

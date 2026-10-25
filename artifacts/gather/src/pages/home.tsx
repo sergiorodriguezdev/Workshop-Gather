@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowRight, CalendarDays, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { categories, workshops } from '../data/workshops';
+import GatherHeader from '../components/gather-header';
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState('Everything');
@@ -16,19 +17,7 @@ export default function Home() {
   return (
     <div className="gather-app">
       <div className="grain" aria-hidden="true" />
-      <header className="site-header">
-        <div className="header-inner">
-          <Link href="/" className="brand focus-ring" data-testid="link-home-logo" aria-label="Gather home">
-            <span className="brand-mark">g</span><span>gather<span className="brand-period">.</span></span>
-          </Link>
-          <nav className="header-nav" aria-label="Main navigation">
-            <a href="#workshops" data-testid="link-upcoming-workshops">Find a workshop</a>
-            <a href="#about" data-testid="link-about-gather">Our little idea</a>
-          </nav>
-          <Link href="/my-rsvps" className="nav-session focus-ring" data-testid="link-header-my-rsvps">My RSVPs</Link>
-          <a href="#workshops" className="nav-cta focus-ring" data-testid="button-explore-workshops">Explore workshops <ArrowRight size={15} /></a>
-        </div>
-      </header>
+      <GatherHeader />
 
       <main>
         <section className="hero">

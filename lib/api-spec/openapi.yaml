@@ -83,6 +83,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /me/rsvps/migrate:
+    post:
+      operationId: migrateMyRsvps
+      tags: [rsvps]
+      summary: Import the signed-in customer's legacy browser RSVPs
+      description: Customer identity is derived from the verified Clerk session. Existing reservations are migrated idempotently.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RsvpMigrationInput"
+      responses:
+        "200":
+          description: Profile synchronized and legacy RSVPs processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RsvpMigrationResult"
+        "400":
+          description: Invalid migration input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /workshops/{workshopId}/rsvps:
     post:
       operationId: createWorkshopRsvp
@@ -209,4 +240,31 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/MyRsvp"
+    RsvpMigrationInput:
+      type: object
+      required: [legacyWorkshopIds]
+      properties:
+        legacyWorkshopIds:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+    RsvpMigrationResult:
+      type: object
+      required: [migratedWorkshopIds, alreadyPresentWorkshopIds, skippedFullWorkshopIds, unknownWorkshopIds]
+      properties:
+        migratedWorkshopIds:
+          type: array
+          items: { type: string }
+        alreadyPresentWorkshopIds:
+          type: array
+          items: { type: string }
+        skippedFullWorkshopIds:
+          type: array
+          items: { type: string }
+        unknownWorkshopIds:
+          type: array
+          items: { type: string }
 

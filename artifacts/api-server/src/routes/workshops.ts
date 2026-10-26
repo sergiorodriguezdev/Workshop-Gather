@@ -7,6 +7,7 @@ import {
 import {
   CreateWorkshopRsvpParams,
   GetWorkshopParams,
+  MigrateMyRsvpsBody,
 } from "@workspace/api-zod";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
@@ -153,6 +154,96 @@ router.get("/me/rsvps", requireCustomer, async (_req, res) => {
   } catch (err) {
     logger.error({ err }, "Failed to load a customer's Gather RSVPs");
     res.status(500).json({ error: "Your RSVPs could not be loaded." });
+  }
+});
+
+router.post("/me/rsvps/migrate", requireCustomer, async (req, res) => {
+  const body = MigrateMyRsvpsBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Legacy RSVP data is invalid." });
+    return;
+  }
+
+  const clerkUserId = res.locals.clerkUserId as string;
+  try {
+    const profile = await getCustomerProfile(clerkUserId);
+    const workshopIds = Array.from(new Set(body.data.legacyWorkshopIds)).sort();
+    const migration = await neonDb.transaction(async (tx) => {
+      await tx
+        .insert(usersTable)
+        .values(profile)
+        .onConflictDoUpdate({
+          target: usersTable.id,
+          set: {
+            email: profile.email,
+            fullName: profile.fullName,
+            updatedAt: new Date(),
+          },
+        });
+
+      const migratedWorkshopIds: string[] = [];
+      const alreadyPresentWorkshopIds: string[] = [];
+      const skippedFullWorkshopIds: string[] = [];
+      const unknownWorkshopIds: string[] = [];
+
+      for (const workshopId of workshopIds) {
+        const [workshop] = await tx
+          .select()
+          .from(workshopsTable)
+          .where(eq(workshopsTable.id, workshopId))
+          .for("update")
+          .limit(1);
+        if (!workshop) {
+          unknownWorkshopIds.push(workshopId);
+          continue;
+        }
+
+        const [existingRsvp] = await tx
+          .select({ id: rsvpsTable.id })
+          .from(rsvpsTable)
+          .where(
+            and(
+              eq(rsvpsTable.userId, clerkUserId),
+              eq(rsvpsTable.workshopId, workshopId),
+            ),
+          )
+          .limit(1);
+        if (existingRsvp) {
+          alreadyPresentWorkshopIds.push(workshopId);
+          continue;
+        }
+
+        if (workshop.seatsReserved >= workshop.capacity) {
+          skippedFullWorkshopIds.push(workshopId);
+          continue;
+        }
+
+        await tx.insert(rsvpsTable).values({
+          userId: clerkUserId,
+          workshopId,
+        });
+        await tx
+          .update(workshopsTable)
+          .set({
+            seatsReserved: sql`${workshopsTable.seatsReserved} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(workshopsTable.id, workshopId));
+        migratedWorkshopIds.push(workshopId);
+      }
+
+      return {
+        migratedWorkshopIds,
+        alreadyPresentWorkshopIds,
+        skippedFullWorkshopIds,
+        unknownWorkshopIds,
+      };
+    });
+
+    res.json(migration);
+  } catch (err) {
+    logger.error({ err }, "Failed to migrate a customer's legacy Gather RSVPs");
+    res.status(500).json({ error: "Your saved RSVPs could not be migrated." });
   }
 });
 

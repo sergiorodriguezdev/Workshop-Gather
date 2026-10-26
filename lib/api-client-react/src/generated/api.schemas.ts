@@ -55,3 +55,18 @@ export type WorkshopListPayload = Workshop[];
 
 export type MyRsvpsPayload = MyRsvp[];
 
+export interface RsvpMigrationInput {
+  /**
+     * @maxItems 100
+     * @items.minLength 1
+     */
+  legacyWorkshopIds: string[];
+}
+
+export interface RsvpMigrationResult {
+  migratedWorkshopIds: string[];
+  alreadyPresentWorkshopIds: string[];
+  skippedFullWorkshopIds: string[];
+  unknownWorkshopIds: string[];
+}
+

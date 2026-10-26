@@ -11,5 +11,7 @@ export * from './healthStatus';
 export * from './myRsvp';
 export * from './myRsvpsPayload';
 export * from './rsvp';
+export * from './rsvpMigrationInput';
+export * from './rsvpMigrationResult';
 export * from './workshop';
 export * from './workshopListPayload';

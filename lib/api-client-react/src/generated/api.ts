@@ -24,12 +24,14 @@ import type {
   HealthStatus,
   MyRsvpsPayload,
   Rsvp,
+  RsvpMigrationInput,
+  RsvpMigrationResult,
   Workshop,
   WorkshopListPayload
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -363,6 +365,95 @@ export function useListMyRsvps<TData = Awaited<ReturnType<typeof listMyRsvps>>, 
 
 
 
+
+export const getMigrateMyRsvpsUrl = () => {
+
+
+
+
+  return `/api/me/rsvps/migrate`
+}
+
+/**
+ * Customer identity is derived from the verified Clerk session. Existing reservations are migrated idempotently.
+ * @summary Import the signed-in customer's legacy browser RSVPs
+ */
+export const migrateMyRsvps = async (rsvpMigrationInput: RsvpMigrationInput, options?: Parameters<typeof customFetch>[1]): Promise<RsvpMigrationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RsvpMigrationResult>(getMigrateMyRsvpsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rsvpMigrationInput)
+  }
+);}
+
+
+
+
+
+export const getMigrateMyRsvpsMutationKey = () => ['migrateMyRsvps'] as const;
+
+export const getMigrateMyRsvpsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof migrateMyRsvps>>, TError,MigrateMyRsvpsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof migrateMyRsvps>>, TError,MigrateMyRsvpsMutationVariables, TContext> => {
+
+const mutationKey = getMigrateMyRsvpsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof migrateMyRsvps>>, MigrateMyRsvpsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  migrateMyRsvps(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MigrateMyRsvpsMutationResult = NonNullable<Awaited<ReturnType<typeof migrateMyRsvps>>>
+    export type MigrateMyRsvpsMutationBody = BodyType<RsvpMigrationInput>
+    export type MigrateMyRsvpsMutationError = ErrorType<ErrorResponse>
+    export type MigrateMyRsvpsMutationVariables = {data: BodyType<RsvpMigrationInput>}
+
+    /**
+ * @summary Import the signed-in customer's legacy browser RSVPs
+ */
+export const useMigrateMyRsvps = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof migrateMyRsvps>>, TError,MigrateMyRsvpsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof migrateMyRsvps>>,
+        TError,
+        MigrateMyRsvpsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMigrateMyRsvpsMutationOptions(options));
+    }
 
 export const getCreateWorkshopRsvpUrl = (workshopId: string,) => {
 

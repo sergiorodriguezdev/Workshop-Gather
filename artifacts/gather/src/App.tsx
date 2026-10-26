@@ -2,7 +2,11 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
-import { getListMyRsvpsQueryKey } from '@workspace/api-client-react';
+import {
+  getGetWorkshopQueryKey,
+  getListMyRsvpsQueryKey,
+  getListWorkshopsQueryKey,
+} from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -12,6 +16,8 @@ import WorkshopDetail from '@/pages/workshop-detail';
 import MyRsvps from '@/pages/my-rsvps';
 import { SignInPage, SignUpPage } from '@/pages/auth';
 import { clerkAppearance } from '@/lib/clerk-appearance';
+import { migrateLegacyCustomerRsvps } from '@/lib/legacy-rsvp-migration';
+import { useToast } from '@/hooks/use-toast';
 import {
   Route,
   Switch,
@@ -59,6 +65,53 @@ function ClearRsvpCacheOnAuthChange() {
   return null;
 }
 
+function MigrateLegacyRsvpsOnSignIn() {
+  const { user, isLoaded } = useUser();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const attemptedUsers = useRef(new Set<string>());
+
+  useEffect(() => {
+    const userId = user?.id;
+    if (!isLoaded || !userId || attemptedUsers.current.has(userId)) return;
+
+    attemptedUsers.current.add(userId);
+    void migrateLegacyCustomerRsvps(userId)
+      .then((result) => {
+        void queryClient.invalidateQueries({ queryKey: getListMyRsvpsQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getListWorkshopsQueryKey() });
+        for (const workshopId of result.migratedWorkshopIds) {
+          void queryClient.invalidateQueries({
+            queryKey: getGetWorkshopQueryKey(workshopId),
+          });
+        }
+        const unresolvedCount =
+          result.skippedFullWorkshopIds.length + result.unknownWorkshopIds.length;
+        if (unresolvedCount > 0) {
+          toast({
+            title: 'Some older RSVPs could not be imported',
+            description:
+              'They remain saved in this browser, but the workshop may be full or no longer listed.',
+            variant: 'destructive',
+          });
+        } else if (result.migratedWorkshopIds.length > 0) {
+          toast({
+            title: 'Your saved RSVPs are now in Gather',
+            description: `${result.migratedWorkshopIds.length} workshop reservation${result.migratedWorkshopIds.length === 1 ? '' : 's'} imported.`,
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn(
+          'Gather could not migrate saved RSVPs. They will be retried on the next app load.',
+          error,
+        );
+      });
+  }, [isLoaded, user?.id, queryClient, toast]);
+
+  return null;
+}
+
 function ClerkRouter() {
   const [, setLocation] = useLocation();
   const stripBase = (path: string) =>
@@ -91,6 +144,7 @@ function ClerkRouter() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <ClearRsvpCacheOnAuthChange />
+      <MigrateLegacyRsvpsOnSignIn />
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/sign-in/*?" component={SignInPage} />

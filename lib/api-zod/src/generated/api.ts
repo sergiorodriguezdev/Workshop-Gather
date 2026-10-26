@@ -130,6 +130,27 @@ export const ListMyRsvpsResponse = zod.array(ListMyRsvpsResponseItem)
 
 
 /**
+ * Customer identity is derived from the verified Clerk session. Existing reservations are migrated idempotently.
+ * @summary Import the signed-in customer's legacy browser RSVPs
+ */
+
+export const migrateMyRsvpsBodyLegacyWorkshopIdsMax = 100;
+
+
+
+export const MigrateMyRsvpsBody = zod.object({
+  "legacyWorkshopIds": zod.array(zod.string().min(1)).max(migrateMyRsvpsBodyLegacyWorkshopIdsMax)
+})
+
+export const MigrateMyRsvpsResponse = zod.object({
+  "migratedWorkshopIds": zod.array(zod.string()),
+  "alreadyPresentWorkshopIds": zod.array(zod.string()),
+  "skippedFullWorkshopIds": zod.array(zod.string()),
+  "unknownWorkshopIds": zod.array(zod.string())
+})
+
+
+/**
  * Customer identity is derived from the verified Clerk session. Duplicate RSVPs are idempotent.
  * @summary RSVP the signed-in customer to a workshop
  */

@@ -190,6 +190,7 @@
 .hero-art { width: 100%; height: 394px; position: relative; padding: 0 20px 0 0; }
 .hero-art::before { content: ''; position: absolute; height: 87%; width: 78%; left: -21px; bottom: -14px; border: 1px solid hsl(var(--accent) / .4); z-index: -1; }
 .hero-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-image-placeholder { width: 100%; height: 100%; display: grid; place-items: center; padding: 24px; background: #e8dfd2; color: #52675e; text-align: center; font-family: 'DM Sans', sans-serif; font-size: 14px; }
 .hero-sticker { position: absolute; left: -53px; top: 45px; width: 104px; height: 104px; border-radius: 50%; color: hsl(var(--primary-foreground)); background: hsl(var(--primary)); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font: 500 14px/1.1 var(--app-font-serif); transform: rotate(-9deg); box-shadow: 0 9px 18px rgba(38, 57, 45, .12); }
 .hero-sticker svg { margin-top: 6px; color: #e9ad7c; }
 .hero-caption { display: flex; justify-content: space-between; position: absolute; bottom: 15px; left: 16px; right: 36px; color: white; font-size: 9px; letter-spacing: .14em; text-shadow: 0 1px 6px #3d443b; }

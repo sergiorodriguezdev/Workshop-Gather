@@ -1,7 +1,8 @@
-import { type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ClerkProvider } from '@clerk/react';
+import { type ReactNode, useEffect, useRef } from 'react';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { ClerkProvider, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
+import { getListMyRsvpsQueryKey } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -41,6 +42,23 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function ClearRsvpCacheOnAuthChange() {
+  const { user, isLoaded } = useUser();
+  const queryClient = useQueryClient();
+  const previous = useRef<{ loaded: boolean; userId?: string }>({ loaded: false });
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const nextUserId = user?.id;
+    if (previous.current.loaded && previous.current.userId !== nextUserId) {
+      queryClient.removeQueries({ queryKey: getListMyRsvpsQueryKey() });
+    }
+    previous.current = { loaded: true, userId: nextUserId };
+  }, [isLoaded, user?.id, queryClient]);
+
+  return null;
+}
+
 function ClerkRouter() {
   const [, setLocation] = useLocation();
   const stripBase = (path: string) =>
@@ -72,6 +90,7 @@ function ClerkRouter() {
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
+      <ClearRsvpCacheOnAuthChange />
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/sign-in/*?" component={SignInPage} />

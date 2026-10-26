@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: workshops
+    description: Public workshop discovery
+  - name: rsvps
+    description: Authenticated customer reservations
 paths:
   /healthz:
     get:
@@ -24,6 +28,105 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /workshops:
+    get:
+      operationId: listWorkshops
+      tags: [workshops]
+      summary: List upcoming workshops
+      responses:
+        "200":
+          description: Available workshops and current seat counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkshopListPayload"
+  /workshops/{workshopId}:
+    get:
+      operationId: getWorkshop
+      tags: [workshops]
+      summary: Get workshop details
+      parameters:
+        - name: workshopId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Workshop details and current seat count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workshop"
+        "404":
+          description: Workshop not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me/rsvps:
+    get:
+      operationId: listMyRsvps
+      tags: [rsvps]
+      summary: List the signed-in customer's RSVPs
+      responses:
+        "200":
+          description: RSVPs belonging to the authenticated Clerk customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyRsvpsPayload"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /workshops/{workshopId}/rsvps:
+    post:
+      operationId: createWorkshopRsvp
+      tags: [rsvps]
+      summary: RSVP the signed-in customer to a workshop
+      description: Customer identity is derived from the verified Clerk session. Duplicate RSVPs are idempotent.
+      parameters:
+        - name: workshopId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "201":
+          description: RSVP created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rsvp"
+        "200":
+          description: Customer already had an RSVP for this workshop
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rsvp"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Workshop not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Workshop is fully booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +136,77 @@ components:
           type: string
       required:
         - status
+    Workshop:
+      type: object
+      required:
+        - id
+        - title
+        - category
+        - date
+        - dateLabel
+        - dateLong
+        - time
+        - duration
+        - venue
+        - address
+        - host
+        - hostNote
+        - capacity
+        - seatsReserved
+        - available
+        - description
+        - image
+        - color
+        - includes
+      properties:
+        id: { type: string }
+        title: { type: string }
+        category: { type: string }
+        date: { type: string, format: date }
+        dateLabel: { type: string }
+        dateLong: { type: string }
+        time: { type: string }
+        duration: { type: string }
+        venue: { type: string }
+        address: { type: string }
+        host: { type: string }
+        hostNote: { type: string }
+        capacity: { type: integer, minimum: 1 }
+        seatsReserved: { type: integer, minimum: 0 }
+        available: { type: integer, minimum: 0 }
+        description: { type: string }
+        image: { type: string }
+        color: { type: string }
+        includes:
+          type: array
+          items: { type: string }
+    Rsvp:
+      type: object
+      required: [id, workshopId, createdAt, alreadyRegistered]
+      properties:
+        id: { type: integer }
+        workshopId: { type: string }
+        createdAt: { type: string, format: date-time }
+        alreadyRegistered: { type: boolean }
+    MyRsvp:
+      type: object
+      required: [id, createdAt, workshop]
+      properties:
+        id: { type: integer }
+        createdAt: { type: string, format: date-time }
+        workshop:
+          $ref: "#/components/schemas/Workshop"
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    WorkshopListPayload:
+      type: array
+      items:
+        $ref: "#/components/schemas/Workshop"
+    MyRsvpsPayload:
+      type: array
+      items:
+        $ref: "#/components/schemas/MyRsvp"
 

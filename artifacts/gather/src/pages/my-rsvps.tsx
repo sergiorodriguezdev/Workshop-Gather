@@ -1,14 +1,24 @@
 import { ArrowRight, CalendarDays, Sparkles } from 'lucide-react';
 import { useUser } from '@clerk/react';
 import { Link } from 'wouter';
-import { workshops } from '../data/workshops';
-import { getCustomerRsvpIds } from '../lib/customer-rsvps';
+import {
+  getListMyRsvpsQueryKey,
+  listMyRsvps,
+  useListMyRsvps,
+} from '@workspace/api-client-react';
 import GatherHeader from '../components/gather-header';
+import { workshopImageUrl } from '../lib/workshop-image';
 
 export default function MyRsvps() {
   const { user, isLoaded } = useUser();
-  const savedIds = new Set(user ? getCustomerRsvpIds(user.id) : []);
-  const savedWorkshops = workshops.filter((workshop) => savedIds.has(workshop.id));
+  const rsvpsQuery = useListMyRsvps({
+    query: {
+      enabled: isLoaded && Boolean(user),
+      queryKey: [...getListMyRsvpsQueryKey(), user?.id ?? 'signed-out'],
+      queryFn: () => listMyRsvps(),
+    },
+  });
+  const savedWorkshops = (rsvpsQuery.data ?? []).map((rsvp) => rsvp.workshop);
 
   return (
     <div className="gather-app">
@@ -41,6 +51,17 @@ export default function MyRsvps() {
               <Link href="/sign-in?returnTo=%2Fmy-rsvps" className="text-link" data-testid="link-my-rsvps-sign-in">Sign in <ArrowRight size={15} /></Link>
               <Link href="/sign-up?returnTo=%2Fmy-rsvps" className="text-link" data-testid="link-my-rsvps-sign-up">Create an account <ArrowRight size={15} /></Link>
             </div>
+          ) : rsvpsQuery.isLoading ? (
+            <div className="empty-results" role="status" data-testid="status-rsvps-loading">
+              <p>Loading your plans…</p>
+            </div>
+          ) : rsvpsQuery.isError ? (
+            <div className="empty-results" role="alert" data-testid="error-rsvps-loading">
+              <Sparkles className="empty-spark" size={24} aria-hidden="true" />
+              <h2 className="serif">We couldn’t load your plans.</h2>
+              <p>Please try again in a moment.</p>
+              <button type="button" onClick={() => { void rsvpsQuery.refetch(); }} data-testid="button-retry-rsvps">Try again</button>
+            </div>
           ) : savedWorkshops.length > 0 ? (
             <>
               <div className="results-note" aria-live="polite" data-testid="text-rsvp-count">
@@ -51,7 +72,7 @@ export default function MyRsvps() {
                 {savedWorkshops.map((workshop, index) => (
                   <Link href={`/workshops/${workshop.id}`} className="workshop-card focus-ring" key={workshop.id} data-testid={`card-rsvp-${workshop.id}`}>
                     <div className="card-image-wrap">
-                      <img className="card-image" src={workshop.image} alt={`${workshop.category} workshop at ${workshop.venue}`} data-testid={`img-rsvp-${workshop.id}`} />
+                      <img className="card-image" src={workshopImageUrl(workshop.image)} alt={`${workshop.category} workshop at ${workshop.venue}`} data-testid={`img-rsvp-${workshop.id}`} />
                       <span className="card-category">{workshop.category}</span>
                       <span className="card-number">0{index + 1}</span>
                     </div>
@@ -72,7 +93,7 @@ export default function MyRsvps() {
             <div className="empty-results" data-testid="empty-customer-rsvps">
               <Sparkles className="empty-spark" size={24} aria-hidden="true" />
               <h2 className="serif">Nothing saved just yet.</h2>
-              <p>When you RSVP to a workshop, it’ll be waiting here in your account on this device.</p>
+                <p>When you RSVP to a workshop, it’ll be waiting here in your Gather account.</p>
               <Link href="/" className="text-link" data-testid="link-browse-from-empty">Find a workshop <ArrowRight size={15} /></Link>
             </div>
           )}

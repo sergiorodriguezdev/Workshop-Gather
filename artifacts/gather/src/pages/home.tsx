@@ -1,18 +1,25 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowRight, CalendarDays, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
-import { categories, workshops } from '../data/workshops';
+import { useListWorkshops } from '@workspace/api-client-react';
 import GatherHeader from '../components/gather-header';
+import { workshopImageUrl } from '../lib/workshop-image';
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState('Everything');
   const [search, setSearch] = useState('');
+  const workshopsQuery = useListWorkshops();
+  const workshops = workshopsQuery.data ?? [];
+  const categories = useMemo(
+    () => ['Everything', ...Array.from(new Set(workshops.map((workshop) => workshop.category)))],
+    [workshops],
+  );
   const filtered = useMemo(() => workshops.filter((workshop) => {
     const matchesCategory = activeCategory === 'Everything' || workshop.category === activeCategory;
     const term = search.trim().toLowerCase();
     const matchesSearch = !term || `${workshop.title} ${workshop.category} ${workshop.venue} ${workshop.host}`.toLowerCase().includes(term);
     return matchesCategory && matchesSearch;
-  }), [activeCategory, search]);
+  }), [workshops, activeCategory, search]);
 
   return (
     <div className="gather-app">
@@ -28,7 +35,13 @@ export default function Home() {
             <a href="#workshops" className="hero-link focus-ring" data-testid="button-browse-the-list">Find your next afternoon <ArrowDown size={16} /></a>
           </div>
           <div className="hero-art fade-up-delay">
-            <img src={workshops[0].image} alt="Hands shaping clay on a potter's wheel" data-testid="img-featured-workshop" />
+            {workshops[0] ? (
+              <img src={workshopImageUrl(workshops[0].image)} alt="Hands shaping clay on a potter's wheel" data-testid="img-featured-workshop" />
+            ) : (
+              <div className="hero-image-placeholder" role="status">
+                {workshopsQuery.isError ? 'Workshops are temporarily unavailable.' : 'Finding your next gathering…'}
+              </div>
+            )}
             <div className="hero-sticker"><span>Good<br />with your<br />hands</span><Sparkles size={16} /></div>
             <div className="hero-caption"><span>01 / 04</span><span>Brooklyn, NY</span></div>
           </div>
@@ -60,16 +73,34 @@ export default function Home() {
           </div>
 
           <div className="results-note" aria-live="polite" data-testid="text-workshop-result-count">
-            <span>{filtered.length === 0 ? 'Nothing on the table just yet.' : `${filtered.length} upcoming ${filtered.length === 1 ? 'gathering' : 'gatherings'}`}</span>
+            <span>
+              {workshopsQuery.isLoading
+                ? 'Finding upcoming gatherings…'
+                : workshopsQuery.isError
+                  ? 'Workshops are temporarily unavailable.'
+                  : filtered.length === 0
+                    ? 'Nothing on the table just yet.'
+                    : `${filtered.length} upcoming ${filtered.length === 1 ? 'gathering' : 'gatherings'}`}
+            </span>
             <span className="results-city">BROOKLYN, NEW YORK <span className="city-dot" /></span>
           </div>
 
-          {filtered.length ? (
+          {workshopsQuery.isLoading ? (
+            <div className="empty-results" role="status" data-testid="status-workshops-loading">
+              <p>Loading the workshop list…</p>
+            </div>
+          ) : workshopsQuery.isError ? (
+            <div className="empty-results" role="alert" data-testid="error-workshops-loading">
+              <h3 className="serif">We couldn’t load the workshops.</h3>
+              <p>Please try again in a moment.</p>
+              <button type="button" onClick={() => { void workshopsQuery.refetch(); }} data-testid="button-retry-workshops">Try again</button>
+            </div>
+          ) : filtered.length ? (
             <div className="workshop-grid" data-testid="list-upcoming-workshops">
               {filtered.map((workshop, index) => (
                 <Link href={`/workshops/${workshop.id}`} className="workshop-card focus-ring" key={workshop.id} data-testid={`card-workshop-${workshop.id}`}>
                   <div className="card-image-wrap">
-                    <img className="card-image" src={workshop.image} alt={`${workshop.category} workshop at ${workshop.venue}`} data-testid={`img-workshop-${workshop.id}`} />
+                    <img className="card-image" src={workshopImageUrl(workshop.image)} alt={`${workshop.category} workshop at ${workshop.venue}`} data-testid={`img-workshop-${workshop.id}`} />
                     <span className="card-category" style={{ '--category-color': workshop.color } as CSSProperties} data-testid={`text-category-${workshop.id}`}>{workshop.category}</span>
                     <span className="card-number">0{index + 1}</span>
                   </div>

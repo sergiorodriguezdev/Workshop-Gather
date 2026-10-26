@@ -1,1 +1,1 @@
-- [Gather RSVP scope](gather-rsvp-scope.md) — keep RSVPs session-local; no login, database, payments, or external integrations.
+- [Gather RSVP scope](gather-rsvp-scope.md) — browsing stays public; Clerk-linked RSVPs and workshop data persist in Neon through a direct connection.

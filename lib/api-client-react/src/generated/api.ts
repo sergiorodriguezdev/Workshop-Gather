@@ -530,3 +530,78 @@ export const useCreateWorkshopRsvp = <TError = ErrorType<ErrorResponse>,
       return useMutation(getCreateWorkshopRsvpMutationOptions(options));
     }
 
+export const getDeleteWorkshopRsvpUrl = (workshopId: string,) => {
+
+
+
+
+  return `/api/workshops/${workshopId}/rsvps`
+}
+
+/**
+ * Removes only the authenticated customer's RSVP. Repeated removals are safe.
+ * @summary Remove the signed-in customer's workshop RSVP
+ */
+export const deleteWorkshopRsvp = async (workshopId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteWorkshopRsvpUrl(workshopId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteWorkshopRsvpMutationKey = () => ['deleteWorkshopRsvp'] as const;
+
+export const getDeleteWorkshopRsvpMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkshopRsvp>>, TError,DeleteWorkshopRsvpMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkshopRsvp>>, TError,DeleteWorkshopRsvpMutationVariables, TContext> => {
+
+const mutationKey = getDeleteWorkshopRsvpMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkshopRsvp>>, DeleteWorkshopRsvpMutationVariables> = (props) => {
+          const {workshopId} = props ?? {};
+
+          return  deleteWorkshopRsvp(workshopId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWorkshopRsvpMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkshopRsvp>>>
+
+    export type DeleteWorkshopRsvpMutationError = ErrorType<ErrorResponse>
+    export type DeleteWorkshopRsvpMutationVariables = {workshopId: string}
+
+    /**
+ * @summary Remove the signed-in customer's workshop RSVP
+ */
+export const useDeleteWorkshopRsvp = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkshopRsvp>>, TError,DeleteWorkshopRsvpMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWorkshopRsvp>>,
+        TError,
+        DeleteWorkshopRsvpMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteWorkshopRsvpMutationOptions(options));
+    }
+

@@ -177,6 +177,12 @@
 .my-rsvps-section .results-note { margin-top: 38px; }
 .my-rsvps-section .empty-results { margin-top: 36px; }
 .my-rsvps-section .text-link { margin-top: 16px; }
+.rsvp-workshop-item { display: flex; flex-direction: column; min-width: 0; }
+.rsvp-workshop-item .workshop-card { flex: 1; }
+.rsvp-remove-button { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 38px; border: 1px solid hsl(var(--border)); border-top: 0; background: hsl(var(--card)); color: hsl(var(--muted-foreground)); cursor: pointer; font: inherit; font-size: 10px; transition: color .2s, background .2s; }
+.rsvp-remove-button:hover:not(:disabled) { color: hsl(var(--destructive)); background: hsl(var(--destructive) / .06); }
+.rsvp-remove-button:disabled { cursor: wait; opacity: .6; }
+.rsvp-remove-error { color: hsl(var(--destructive)); font-size: 11px; margin: 12px 0 0; }
 .hero { width: min(1200px, calc(100% - 64px)); margin: 0 auto; min-height: 564px; display: grid; grid-template-columns: 1.06fr .94fr; align-items: center; position: relative; padding: 58px 0 72px; }
 .hero-copy { position: relative; z-index: 1; padding: 0 0 12px 28px; }
 .eyebrow { display: flex; align-items: center; gap: 10px; font-size: 9px; font-weight: 700; color: hsl(var(--muted-foreground)); letter-spacing: .16em; }

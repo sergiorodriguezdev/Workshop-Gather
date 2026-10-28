@@ -6,6 +6,7 @@ import {
 } from "@workspace/db/schema";
 import {
   CreateWorkshopRsvpParams,
+  DeleteWorkshopRsvpParams,
   GetWorkshopParams,
   MigrateMyRsvpsBody,
 } from "@workspace/api-zod";
@@ -13,7 +14,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { logger } from "../lib/logger";
 import { neonDb } from "../lib/neon-db";
-import { sendRsvpCreatedWebhook } from "../lib/rsvp-webhook";
+import { sendRsvpCountWebhook } from "../lib/rsvp-webhook";
 
 const router: IRouter = Router();
 
@@ -312,7 +313,12 @@ router.post(
           })
           .where(eq(workshopsTable.id, workshop.id));
 
-        return { kind: "created" as const, rsvp, workshop };
+        return {
+          kind: "created" as const,
+          rsvp,
+          workshop,
+          newRsvpCount: workshop.seatsReserved + 1,
+        };
       });
 
       if (result.kind === "missing") {
@@ -325,25 +331,10 @@ router.post(
       }
 
       if (result.kind === "created") {
-        const createdAt = result.rsvp.createdAt.toISOString();
-        await sendRsvpCreatedWebhook({
-          event: "gather.rsvp.created",
-          occurredAt: createdAt,
-          data: {
-            rsvp: { id: result.rsvp.id, createdAt },
-            customer: {
-              id: clerkUserId,
-              name: profile.fullName,
-              email: profile.email,
-            },
-            workshop: {
-              id: result.workshop.id,
-              title: result.workshop.title,
-              date: result.workshop.date,
-              time: result.workshop.time,
-              venue: result.workshop.venue,
-            },
-          },
+        await sendRsvpCountWebhook({
+          workshopName: result.workshop.title,
+          rsvps: result.newRsvpCount,
+          updatedAt: result.rsvp.createdAt.toISOString(),
         });
       }
 
@@ -358,6 +349,74 @@ router.post(
     } catch (err) {
       logger.error({ err }, "Failed to save a Gather RSVP");
       res.status(500).json({ error: "Your RSVP could not be saved." });
+    }
+  },
+);
+
+router.delete(
+  "/workshops/:workshopId/rsvps",
+  requireCustomer,
+  async (req, res): Promise<void> => {
+    const params = DeleteWorkshopRsvpParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "A valid workshop ID is required." });
+      return;
+    }
+
+    const clerkUserId = res.locals.clerkUserId as string;
+    try {
+      const result = await neonDb.transaction(async (tx) => {
+        const [workshop] = await tx
+          .select()
+          .from(workshopsTable)
+          .where(eq(workshopsTable.id, params.data.workshopId))
+          .for("update")
+          .limit(1);
+        if (!workshop) return { kind: "missing" as const };
+
+        const [rsvp] = await tx
+          .select({ id: rsvpsTable.id })
+          .from(rsvpsTable)
+          .where(
+            and(
+              eq(rsvpsTable.userId, clerkUserId),
+              eq(rsvpsTable.workshopId, workshop.id),
+            ),
+          )
+          .limit(1);
+        if (!rsvp) return { kind: "absent" as const };
+
+        await tx.delete(rsvpsTable).where(eq(rsvpsTable.id, rsvp.id));
+        const newRsvpCount = Math.max(0, workshop.seatsReserved - 1);
+        const updatedAt = new Date();
+        await tx
+          .update(workshopsTable)
+          .set({ seatsReserved: newRsvpCount, updatedAt })
+          .where(eq(workshopsTable.id, workshop.id));
+
+        return {
+          kind: "removed" as const,
+          workshopName: workshop.title,
+          newRsvpCount,
+          updatedAt: updatedAt.toISOString(),
+        };
+      });
+
+      if (result.kind === "missing") {
+        res.status(404).json({ error: "Workshop not found." });
+        return;
+      }
+      if (result.kind === "removed") {
+        await sendRsvpCountWebhook({
+          workshopName: result.workshopName,
+          rsvps: result.newRsvpCount,
+          updatedAt: result.updatedAt,
+        });
+      }
+      res.sendStatus(204);
+    } catch (err) {
+      logger.error({ err }, "Failed to remove a Gather RSVP");
+      res.status(500).json({ error: "Your RSVP could not be removed." });
     }
   },
 );

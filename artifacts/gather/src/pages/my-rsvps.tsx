@@ -1,9 +1,14 @@
-import { ArrowRight, CalendarDays, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, CalendarDays, Sparkles, X } from 'lucide-react';
 import { useUser } from '@clerk/react';
 import { Link } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
 import {
+  getGetWorkshopQueryKey,
   getListMyRsvpsQueryKey,
+  getListWorkshopsQueryKey,
   listMyRsvps,
+  useDeleteWorkshopRsvp,
   useListMyRsvps,
 } from '@workspace/api-client-react';
 import GatherHeader from '../components/gather-header';
@@ -11,6 +16,9 @@ import { workshopImageUrl } from '../lib/workshop-image';
 
 export default function MyRsvps() {
   const { user, isLoaded } = useUser();
+  const queryClient = useQueryClient();
+  const deleteRsvpMutation = useDeleteWorkshopRsvp();
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const rsvpsQuery = useListMyRsvps({
     query: {
       enabled: isLoaded && Boolean(user),
@@ -19,6 +27,21 @@ export default function MyRsvps() {
     },
   });
   const savedWorkshops = (rsvpsQuery.data ?? []).map((rsvp) => rsvp.workshop);
+
+  const removeRsvp = (workshopId: string) => {
+    setRemoveError(null);
+    deleteRsvpMutation.mutate(
+      { workshopId },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: getListMyRsvpsQueryKey() });
+          void queryClient.invalidateQueries({ queryKey: getListWorkshopsQueryKey() });
+          void queryClient.invalidateQueries({ queryKey: getGetWorkshopQueryKey(workshopId) });
+        },
+        onError: () => setRemoveError('Your RSVP could not be removed. Please try again.'),
+      },
+    );
+  };
 
   return (
     <div className="gather-app">
@@ -68,24 +91,39 @@ export default function MyRsvps() {
                 <span>{savedWorkshops.length} saved {savedWorkshops.length === 1 ? 'gathering' : 'gatherings'}</span>
                 <span className="results-city">BROOKLYN, NEW YORK <span className="city-dot" /></span>
               </div>
+              {removeError && <p className="rsvp-remove-error" role="alert">{removeError}</p>}
               <div className="workshop-grid" data-testid="list-customer-rsvps">
                 {savedWorkshops.map((workshop, index) => (
-                  <Link href={`/workshops/${workshop.id}`} className="workshop-card focus-ring" key={workshop.id} data-testid={`card-rsvp-${workshop.id}`}>
-                    <div className="card-image-wrap">
-                      <img className="card-image" src={workshopImageUrl(workshop.image)} alt={`${workshop.category} workshop at ${workshop.venue}`} data-testid={`img-rsvp-${workshop.id}`} />
-                      <span className="card-category">{workshop.category}</span>
-                      <span className="card-number">0{index + 1}</span>
-                    </div>
-                    <div className="card-body">
-                      <div className="card-date" data-testid={`text-rsvp-date-${workshop.id}`}><CalendarDays size={14} /> {workshop.dateLabel} <span className="date-separator">·</span> {workshop.time.split('–')[0]}</div>
-                      <h2 className="serif">{workshop.title}</h2>
-                      <p className="card-host" data-testid={`text-rsvp-host-${workshop.id}`}>With {workshop.host} <span>·</span> {workshop.venue}</p>
-                      <div className="card-bottom">
-                        <span className="availability" data-testid={`status-rsvp-saved-${workshop.id}`}>RSVP saved</span>
-                        <span className="card-arrow" aria-hidden="true"><ArrowRight size={17} /></span>
+                  <article className="rsvp-workshop-item" key={workshop.id}>
+                    <Link href={`/workshops/${workshop.id}`} className="workshop-card focus-ring" data-testid={`card-rsvp-${workshop.id}`}>
+                      <div className="card-image-wrap">
+                        <img className="card-image" src={workshopImageUrl(workshop.image)} alt={`${workshop.category} workshop at ${workshop.venue}`} data-testid={`img-rsvp-${workshop.id}`} />
+                        <span className="card-category">{workshop.category}</span>
+                        <span className="card-number">0{index + 1}</span>
                       </div>
-                    </div>
-                  </Link>
+                      <div className="card-body">
+                        <div className="card-date" data-testid={`text-rsvp-date-${workshop.id}`}><CalendarDays size={14} /> {workshop.dateLabel} <span className="date-separator">·</span> {workshop.time.split('–')[0]}</div>
+                        <h2 className="serif">{workshop.title}</h2>
+                        <p className="card-host" data-testid={`text-rsvp-host-${workshop.id}`}>With {workshop.host} <span>·</span> {workshop.venue}</p>
+                        <div className="card-bottom">
+                          <span className="availability" data-testid={`status-rsvp-saved-${workshop.id}`}>RSVP saved</span>
+                          <span className="card-arrow" aria-hidden="true"><ArrowRight size={17} /></span>
+                        </div>
+                      </div>
+                    </Link>
+                    <button
+                      type="button"
+                      className="rsvp-remove-button focus-ring"
+                      onClick={() => removeRsvp(workshop.id)}
+                      disabled={deleteRsvpMutation.isPending}
+                      data-testid={`button-remove-rsvp-${workshop.id}`}
+                    >
+                      <X size={13} aria-hidden="true" />
+                      {deleteRsvpMutation.isPending && deleteRsvpMutation.variables?.workshopId === workshop.id
+                        ? 'Removing…'
+                        : 'Remove RSVP'}
+                    </button>
+                  </article>
                 ))}
               </div>
             </>

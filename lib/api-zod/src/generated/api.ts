@@ -169,3 +169,17 @@ export const CreateWorkshopRsvpResponse = zod.object({
 })
 
 
+/**
+ * Removes only the authenticated customer's RSVP. Repeated removals are safe.
+ * @summary Remove the signed-in customer's workshop RSVP
+ */
+
+
+
+export const DeleteWorkshopRsvpParams = zod.object({
+  "workshopId": zod.coerce.string().min(1)
+})
+
+export const DeleteWorkshopRsvpResponse = zod.void()
+
+

@@ -158,6 +158,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteWorkshopRsvp
+      tags: [rsvps]
+      summary: Remove the signed-in customer's workshop RSVP
+      description: Removes only the authenticated customer's RSVP. Repeated removals are safe.
+      parameters:
+        - name: workshopId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "204":
+          description: RSVP removed or was already absent
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Workshop not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:

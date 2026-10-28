@@ -1,30 +1,13 @@
 import { logger } from "./logger";
 
-type RsvpWebhookPayload = {
-  event: "gather.rsvp.created";
-  occurredAt: string;
-  data: {
-    rsvp: {
-      id: number;
-      createdAt: string;
-    };
-    customer: {
-      id: string;
-      name: string | null;
-      email: string | null;
-    };
-    workshop: {
-      id: string;
-      title: string;
-      date: string;
-      time: string;
-      venue: string;
-    };
-  };
+type RsvpCountWebhookPayload = {
+  workshopName: string;
+  rsvps: number;
+  updatedAt: string;
 };
 
-export async function sendRsvpCreatedWebhook(
-  payload: RsvpWebhookPayload,
+export async function sendRsvpCountWebhook(
+  payload: RsvpCountWebhookPayload,
 ): Promise<void> {
   const webhookUrl = process.env.GATHER_RSVP_WEBHOOK_URL;
   const webhookSecret = process.env.GATHER_RSVP_WEBHOOK_SECRET;
@@ -60,13 +43,13 @@ export async function sendRsvpCreatedWebhook(
     });
     if (!response.ok) {
       logger.warn(
-        { status: response.status, rsvpId: payload.data.rsvp.id },
+        { status: response.status, workshopName: payload.workshopName },
         "Gather RSVP webhook returned a non-success status",
       );
     }
   } catch {
     logger.warn(
-      { rsvpId: payload.data.rsvp.id },
+      { workshopName: payload.workshopName },
       "Gather RSVP webhook delivery failed",
     );
   } finally {

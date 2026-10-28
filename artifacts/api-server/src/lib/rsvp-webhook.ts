@@ -11,6 +11,7 @@ export async function sendRsvpCountWebhook(
 ): Promise<void> {
   const webhookUrl = process.env.GATHER_RSVP_WEBHOOK_URL;
   const webhookSecret = process.env.GATHER_RSVP_WEBHOOK_SECRET;
+  const externalAccessToken = process.env.GATHER_RSVP_WEBHOOK_ACCESS_TOKEN;
   if (!webhookUrl) return;
   if (!webhookSecret) {
     logger.warn("Gather RSVP webhook secret is missing; notification was skipped");
@@ -37,6 +38,9 @@ export async function sendRsvpCountWebhook(
       headers: {
         "content-type": "application/json",
         "X-Webhook-Secret": webhookSecret,
+        ...(externalAccessToken
+          ? { authorization: `Bearer ${externalAccessToken}` }
+          : {}),
       },
       body: JSON.stringify(payload),
       signal: controller.signal,

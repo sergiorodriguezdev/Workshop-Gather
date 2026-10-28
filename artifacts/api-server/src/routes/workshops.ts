@@ -13,6 +13,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { logger } from "../lib/logger";
 import { neonDb } from "../lib/neon-db";
+import { sendRsvpCreatedWebhook } from "../lib/rsvp-webhook";
 
 const router: IRouter = Router();
 
@@ -311,7 +312,7 @@ router.post(
           })
           .where(eq(workshopsTable.id, workshop.id));
 
-        return { kind: "created" as const, rsvp };
+        return { kind: "created" as const, rsvp, workshop };
       });
 
       if (result.kind === "missing") {
@@ -321,6 +322,29 @@ router.post(
       if (result.kind === "full") {
         res.status(409).json({ error: "This workshop is fully booked." });
         return;
+      }
+
+      if (result.kind === "created") {
+        const createdAt = result.rsvp.createdAt.toISOString();
+        await sendRsvpCreatedWebhook({
+          event: "gather.rsvp.created",
+          occurredAt: createdAt,
+          data: {
+            rsvp: { id: result.rsvp.id, createdAt },
+            customer: {
+              id: clerkUserId,
+              name: profile.fullName,
+              email: profile.email,
+            },
+            workshop: {
+              id: result.workshop.id,
+              title: result.workshop.title,
+              date: result.workshop.date,
+              time: result.workshop.time,
+              venue: result.workshop.venue,
+            },
+          },
+        });
       }
 
       res

@@ -27,7 +27,12 @@ export async function sendRsvpCreatedWebhook(
   payload: RsvpWebhookPayload,
 ): Promise<void> {
   const webhookUrl = process.env.GATHER_RSVP_WEBHOOK_URL;
+  const webhookSecret = process.env.GATHER_RSVP_WEBHOOK_SECRET;
   if (!webhookUrl) return;
+  if (!webhookSecret) {
+    logger.warn("Gather RSVP webhook secret is missing; notification was skipped");
+    return;
+  }
 
   let parsedUrl: URL;
   try {
@@ -36,8 +41,8 @@ export async function sendRsvpCreatedWebhook(
     logger.warn("Gather RSVP webhook URL is invalid; notification was skipped");
     return;
   }
-  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
-    logger.warn("Gather RSVP webhook URL must use HTTP or HTTPS");
+  if (parsedUrl.protocol !== "https:") {
+    logger.warn("Gather RSVP webhook URL must use HTTPS");
     return;
   }
 
@@ -46,7 +51,10 @@ export async function sendRsvpCreatedWebhook(
   try {
     const response = await fetch(parsedUrl, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "X-Webhook-Secret": webhookSecret,
+      },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
